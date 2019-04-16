@@ -95,27 +95,39 @@ namespace  scenedump {
 			return obviousSuperclasses.Contains(t.FullName);
 		}
 
-		
-
+		/**	Whenever a value gets rendered, it hooks through here, so this is where string substitutions are handled, and 
+		 *		where you'd want to handle regular expressions as well.
+		 */
 		public string abbreviateValue(string src) {
-			if (valueAbbreviations == null)
+			return abbreviate(src, valueAbbreviations);
+			// or , if you decide to implement regex replacement, something like...
+			// return abbreviate( applyRegex(src, valueRegexes, valueReplacements),  valueAbbreviations);
+		}
+
+
+		/**	Whenever a Type.FullName gets rendered, it hooks through here, so this is where string substitutions are handled, and 
+		 *		where you'd want to handle regular expressions as well.
+		 */
+		public string abbreviateType(string src) {
+			return abbreviate(src, typeAbbreviations);
+			// see abbreviateValue for suggestions on implementing regular expression handling.
+		}
+
+		public string abbreviate(string src, string[,] abbreviations) {
+			if (abbreviations == null)
 				return src;
 
 			String outcome = src;
 			for (int x = 0; x < valueAbbreviations.GetLength(0); x++) {
-				outcome = outcome.Replace(valueAbbreviations[x, 0], valueAbbreviations[x, 1]);
+				outcome = outcome.Replace(abbreviations[x, 0], abbreviations[x, 1]);
 			}
 
 			return outcome;
 		}
 
-		public string abbreviateType(string src) {
-			if (typeAbbreviations == null)
-				return src;
-			String outcome = src;
-			for (int x = 0; x < typeAbbreviations.GetLength(0); x++)
-				outcome = outcome.Replace(typeAbbreviations[x, 0], typeAbbreviations[x, 1]);
-			return outcome;
-		}
+		// add method here to apply regular expressions if desired.
+		// public string applyRegex(String src, Regex[] regexes, etc...)
 	}
+
+	
 }

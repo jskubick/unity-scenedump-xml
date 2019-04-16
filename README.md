@@ -157,5 +157,5 @@ There's no real reason why I couldn't have done this for other classes as well. 
 
 * `interfaceContainerTagName` and `interfaceTagName` work the same way as their 'superclass' counterpards. 
 
-* `typeAbbreviations` and `valueAbbreviations` are 2-dimensional String[,] arrays defining name/value substitution pairs that get applied to... surprisingly... type names and values. If the array is null, no substitutions are made. Note that this is simple String.Replace(), and does NOT involve regular expressions (the original version did, but I decided to simplify it).
+* `typeAbbreviations` and `valueAbbreviations` are 2-dimensional String[,] arrays defining name/value substitution pairs that get applied to... surprisingly... type names and values. If the array is null, no substitutions are made. Note that this is simple String.Replace(before,after), and does NOT involve regular expressions. Originally, it DID use regular expressions... then I realized I couldn't think of a single real use-case that actually needed them, and rewrote it to use String replace instead to make everyone's lives easier. 
 

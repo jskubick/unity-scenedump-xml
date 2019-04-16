@@ -33,16 +33,16 @@ namespace scenedump {
 		[MenuItem("Debug/Export Scene as Xml (terse)")]
 		public static void dumpSceneTerse() {
 			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
-			opt.includeUntagged = false; // if the tag's value is "Untagged" (or null, or blank), omit the 'tag' attribute entirely
-			opt.xmlPrefix = null;
+			opt.xmlPrefix = null; // don't prefix tags
+			opt.includeUntagged = false; // don't  include a "tag" attribute unless it actually has a meaningful value (eg, NOT null, blank, or "Untagged")
+			opt.includeValueStringAsProperty = true; // render values of things like vector3 as string values of attributes
+			opt.includeValueAsDiscreteElements = false; // don't verbosely render values of things like Vector3 as discrete child elements of container parent elements
+			opt.compressArrays = true; // if the last (or all) elements of an array have the same value, collapse them all into a single element
+
 			opt.superclassContainerTagName = null; // if null, the container tag is omitted entirely
 			opt.superclassTagName = "extends";
 			opt.interfaceContainerTagName = null; // container tag omitted entirely if null.
 			opt.interfaceTagName = "implements";
-
-			opt.includeValueStringAsProperty = true;
-			opt.includeValueAsDiscreteElements = false;
-			opt.compressArrays = true; // true == collapse elements with the same value at the tail end of an array into a single element to save space.
 
 			// Whenever a Type name gets output, we rip through typeAbbreviations to do a search/replace on every pair (note: it's straight-up string, not regex)
 			opt.typeAbbreviations = new String[,] { {"UnityEngine.", "µ." }, { "System.", "§." } };
@@ -55,17 +55,16 @@ namespace scenedump {
 		[MenuItem("Debug/Export Scene as Xml (verbose)")]
 		public static void dumpSceneVerbose() {
 			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
-			opt.includeUntagged = true; // if true, every GameObject has a 'tag' attribute. If false, omit tag attribute if value is null, blank, or "Untagged"
-										//opt.xmlPrefix = "unity"; // prepended to the document's XML tags. Ex: <unity:GameObject ...>
+			opt.xmlPrefix = "u"; // all XML tags will be prefixed, eg: "<u:GameObject >"
+			opt.includeUntagged = true; // include "tag" attribute for all GameObjects, even if it's null/blank/Untagged
+			opt.includeValueStringAsProperty = false; // false == don't render values as properties with compact text values, like: position="(1,2,3)"
+			opt.includeValueAsDiscreteElements = true; // true == render them as nested elements, with one value per element. Ex: <Vector3><x>1</x><y>2</y><z>3</z></Vector3>
+			opt.compressArrays = false; // render arrays with one element per value, even if the array's  tail end (or entirety) has the same values.
+
 			opt.superclassContainerTagName = "extends";
 			opt.superclassTagName = "superclass";
 			opt.interfaceContainerTagName = "implements";
 			opt.interfaceTagName = "interface";
-
-			// fyi, there's nothing that says you can't render values as BOTH properties AND discrete elements. 
-			opt.includeValueStringAsProperty = false; // false == don't render values as properties with compact text values, like: position="(1,2,3)"
-			opt.includeValueAsDiscreteElements = true; // true == render them as nested elements, with one value per element. Ex: <Vector3><x>1</x><y>2</y><z>3</z></Vector3>
-			opt.compressArrays = false; // false == render every element of an array into its own XML element, even if they're all the same
 
 			dumpScene(opt, OUTPUT_FILE_VERBOSE);
 		}

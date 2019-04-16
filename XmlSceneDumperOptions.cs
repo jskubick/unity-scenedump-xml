@@ -69,9 +69,7 @@ namespace  scenedump {
 		
 		public int interfaceInlineMax = 0;
 
-		public static XmlSceneDumperOptions FULL { get; private set; } = XmlSceneDumperOptions.initFull();
-		public static XmlSceneDumperOptions COMPACT { get; private set; } = XmlSceneDumperOptions.initCompact();
-		public static XmlSceneDumperOptions ULTRACOMPACT { get; private set; } = XmlSceneDumperOptions.initUltraCompact(5, 5);
+		
 
 		public HashSet<String> obviousSuperclasses { get; set; } = new HashSet<String>();
 		public HashSet<String> DEFAULT_OBVIOUS_SUPERCLASSES = new HashSet<String>() { "System.Object", "UnityEngine.Object", "UnityEngine.Component", "UnityEngine.MonoBehaviour", "UnityEngine.Behaviour" };
@@ -79,111 +77,11 @@ namespace  scenedump {
 
 		
 
-		public HashSet<String> EMPTY_SET = new HashSet<String>();
-
-		/* enumerates superclasses and interfaces as follows:
-		 *	<extends>
-		 *		<baseclass>UnityEngine.Whatever</baseclass>
-		 *		<!-- if UnityEngine.Behaviour is in obviousSuperclasses, we omit it and the remaining superclasses -->
-		 *		<baseclass>UnityEngine.Behaviour</baseclass> 
-		 *		<baseclass>UnityEngine.Component</baseclass>
-		 *		<baseclass>UnityEngine.Object</baseclass>
-		 *	</extends>
-		 *	<implements>
-		 *		<interface>UnityEngine.SomeInterface</interface>
-		 *		<interface>UnityEngine.AnotherInterface</interface>
-		 *		<!-- note that interface-ancestry is NOT enumerated. feel free to implement it if you genuinely care. -->
-		 *	</implements>
-		 */
-		private void useVerboseAncestry() {
-			superclassSeparator = null; // setting to null prevents rendering list as a single-line string
-			superclassContainerTagName = "extends";
-			superclassTagName = "baseclass";
-			superclassInlineMax = 0;
-			interfaceSeparator = null;
-			interfaceContainerTagName = "implements";
-			interfaceTagName = "interface";
-			interfaceInlineMax = 0;
-		}
-
-		/* enumerates superclasses and interfaces as follows:
-		 * <GameObject ...>
-		 *		<!-- Transform tag goes here, unless transforms are inline -->
-		 *		<extends>UnityEngine.Whatever</extends>
-		 *		<implements>UnityEngine.SomeInterface</implements>
-		 *		<implements>UnityEngine.AnotherInterface</implements>
-		 *		<!-- remainder of Component and GameObject tags follow... -->
-		 */
-		private void useSemiVerboseAncestry() {
-			superclassSeparator = null; // setting to null forces one superclass per tag
-			superclassContainerTagName = null; // setting to null eliminates outer tag container
-			superclassTagName = "extends";
-			superclassInlineMax = 0;
-			interfaceSeparator = null;
-			interfaceContainerTagName = null;
-			interfaceTagName = "implements";
-			interfaceInlineMax = 0;
-		}
-
-		/*	enumerates superclasses and interfaces as follows:
-		 *	<GameObject ...>
-		 *		<extends>UnityEngine.Whatever:-»UnityEngine.Component</extends>
-		 *		<implements>UnityEngine.SomeInterface, UnityEngine.AnotherInterface</implements>
-		 */
-		private void useCompactAncestry() {
-			superclassSeparator = " -» ";
-			superclassContainerTagName = null;
-			superclassTagName = "extends";
-			superclassInlineMax = 0;
-			interfaceSeparator = ", ";
-			interfaceContainerTagName = null;
-			interfaceTagName = "implements";
-			interfaceInlineMax = 0;
-		}
-
-		/*	Enumerates superclasses and interface inline with GameObject tag when possible, or as per CompactAncestry otherwise:
-		 *	<!-- the "µ" is substitured for "UnityEngine" when unityengineAbbreviation = "µ" -->
-		 *	<GameObject extends="µ.Behaviour" implements="µ.SomeInterface, µ.AnotherInterface">
-		 *	
-		 *	<!-- example where inline limit is 1 for both superclasses and interfaces, there's one superclass, and two interfaces:
-		 *	<GameObject extends="µ.Behaviour">
-		 *		<implements>µ.SomeInterface, µ.AnotherInterface</implements>
-		 */
-
-		private void useUltraCompactAncestry(int maxInlineSuperclasses, int maxInlineInterfaces) {
-			useCompactAncestry();
-			this.superclassInlineMax = maxInlineSuperclasses;
-			this.interfaceInlineMax = maxInlineInterfaces;
-		}
+		
 
 
-		public static XmlSceneDumperOptions initFull() {
-			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
-			opt.useVerboseAncestry();
-			return opt;
-		}
-
-		public static XmlSceneDumperOptions initCompact() {
-			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
-			opt.xmlPrefix = null;
-
-			opt.obviousSuperclasses = opt.DEFAULT_OBVIOUS_SUPERCLASSES;
-			opt.includeUntagged = false;
-			opt.showTransformValuesAsGameObjectAttributes = true;
-			opt.useCompactValues = true; // render most property values as Strings
-			opt.useSemiVerboseAncestry();
-
-			opt.valueAbbreviations = new String[1, 2] { { "\n", "¬" } };
-
-			return opt;
-		}
-
-		public static XmlSceneDumperOptions initUltraCompact(int maxInlineSuperclasses, int maxInlineInterfaces) {
-			XmlSceneDumperOptions opt = initCompact();
-			opt.valueAbbreviations = new String[2, 2] { { "UnityEngine.", "µ." }, { "\n", "¬" } };
-			opt.useUltraCompactAncestry(maxInlineSuperclasses, maxInlineInterfaces);
-			return opt;
-		}
+		
+		
 
 		public bool isObviousSuperclass(System.Object o) {
 			if (o == null)
@@ -197,15 +95,7 @@ namespace  scenedump {
 			return obviousSuperclasses.Contains(t.FullName);
 		}
 
-		public HashSet<string> getIgnoredProperties() {
-			if (explicitlyIgnoredProperties != null)
-				return explicitlyIgnoredProperties;
-
-			if (ignoreRedundantProperties)
-				return redundantProperties;
-
-			return EMPTY_SET;
-		}
+		
 
 		public string abbreviateValue(string src) {
 			if (valueAbbreviations == null)

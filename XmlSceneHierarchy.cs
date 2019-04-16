@@ -553,6 +553,8 @@ namespace  scenedump {
 				return "UnityEngine.Vector4";
 			if ("Rect".Equals(property.propertyType.ToString()))
 				return "UnityEngine.Rect";
+			if ("AnimationCurve".Equals(property.propertyType.ToString()))
+				return "UnityEngine.AnimationCurve";
 			return property.propertyType.ToString();
 		}
 

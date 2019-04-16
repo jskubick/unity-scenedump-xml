@@ -29,4 +29,4 @@ Go to https://github.com/jskubick/unity-screendump-xml-project
 
 ## I have some other question
 
-Go to https://github.com/jskubick/unity-screendump-xml-project
+Go to https://github.com/jskubick/unity-scenedump-xml-project

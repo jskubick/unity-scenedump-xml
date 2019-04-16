@@ -145,7 +145,7 @@ Note that the previous two options aren't mutually exclusive. However, if both a
 
 `superclassContainerTagName` and `superclassTagName`, together with `tagnameMonoBehaviour` and `MonoBehaviour`, determine how superclasses are represented: 
 
-* If superclassContainerTagName is null, the container tag is omitted. Note that superclassTagName must NOT be null.
+* If `superclassContainerTagName` is null, the container tag is omitted. Note that `superclassTagName` must NOT be null.
 
 * If `tagnameBehaviour` and `tagnameMonoBehaviour` are null, any class that extends UnityEngine.Component gets rendered into a `<Component>` tag. When listing superclasses, we stop at the class whose Type.BaseType is UnityEngine.Component (since it's obvious by the `<Component>` tag itself that the class extends Component).
 

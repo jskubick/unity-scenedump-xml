@@ -6,7 +6,12 @@ namespace  scenedump {
 	public enum OmitWhen { NEVER, IF_EMPTY, ALWAYS };
 	public class XmlSceneDumperOptions {
 
+		// NEVER: every child of a <Component> (or <Behaviour, or MonoBehaviour, or ...) has a <properties> tag containing <property> tags for each property.
+		// IF_EMPTY: same, but components with NO properties have the empty <properties/> tag omitted
+		// ALWAYS: <property> and <array> children go directly under <Component> (or <Behaviour>, or ...) tag.
 		public OmitWhen omitContainerFieldsProperties = OmitWhen.ALWAYS;
+
+		// if true, the sourcecode of your scripts will be embedded in the XML. You'll almost ALWAYS want this to be false, even when generating verbose XML.
 		public bool includeSerializedPropertyTypeMonoScript = false;
 
 		// render values as attribute string
@@ -34,54 +39,18 @@ namespace  scenedump {
 		/**	if non-null, specifies the prefix used for all XML tags */
 		public String xmlPrefix { get; set; } = null;
 
-	
+		// this URL is a complete fiction... reqired by XML, but doesn't refer to any actual file (at least, as of April 16, 2019)
 		public String xmlNamespace { get; set; } = "http://pantherkitty.software/xml/unity-scene/1.0";
 
 		public String[,] typeAbbreviations = null;
 		public String[,] valueAbbreviations = null;
-
-		public bool terseValues = true;
-
-		// Properties that get ignored when adding properties of components
-		public HashSet<String> redundantProperties { get; private set; } = new HashSet<String>() { "position", "localPosition", "eulerAngles", "localEulerAngles", "rotation", "localRotation", "localScale", "parent", "hasChanged", "tag", "name", "hideFlags", "right", "up", "forward", "hierarchyCapacity", "anchorMin", "anchorMax", "anchoredPosition", "sizeDelta", "pivot", "anchoredPosition3D", "offsetMin", "offsetMax" };
-		public HashSet<String> explicitlyIgnoredProperties { get; set; } = null;
-		public bool ignoreRedundantProperties = true;
-
-		/**	When null, don't abbreviate "UnityEngine" in class names; When non-null, replace "UnityEngine" with specified value. */
-		public string unityengineAbbreviation { get; set; } = null;
-
-		public string newlineSeparator = null;
-
 		
-
 		// if false, omits 'tag' attribute when value is 'Untagged', blank, or null
 		public bool includeUntagged { get; set; } = false;
 
-		public bool showTransformValuesAsGameObjectAttributes { get; set; } = false;
-		public bool useCompactValues { get; set; } = false;
 
-		// see use*Ancestry() methods for examples of how to use
-		public string superclassSeparator { get; set; } = null; //":-»";
-		
-		public int superclassInlineMax = 0;
-
-		public string interfaceSeparator { get; set; } = null; //", ";
-		
-		public int interfaceInlineMax = 0;
-
-		
-
-		public HashSet<String> obviousSuperclasses { get; set; } = new HashSet<String>();
-		public HashSet<String> DEFAULT_OBVIOUS_SUPERCLASSES = new HashSet<String>() { "System.Object", "UnityEngine.Object", "UnityEngine.Component", "UnityEngine.MonoBehaviour", "UnityEngine.Behaviour" };
-		private HashSet<String> DEFAULT_SILLY_SUPERCLASSES = new HashSet<String>() { "System.Object" };
-
-		
-
-		
-
-
-		
-		
+		public HashSet<String> obviousSuperclasses { get; set; } = new HashSet<String>() { "System.Object" };
+	
 
 		public bool isObviousSuperclass(System.Object o) {
 			if (o == null)
@@ -118,7 +87,7 @@ namespace  scenedump {
 				return src;
 
 			String outcome = src;
-			for (int x = 0; x < valueAbbreviations.GetLength(0); x++) {
+			for (int x = 0; x < abbreviations.GetLength(0); x++) {
 				outcome = outcome.Replace(abbreviations[x, 0], abbreviations[x, 1]);
 			}
 

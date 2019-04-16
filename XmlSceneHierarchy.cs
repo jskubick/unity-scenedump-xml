@@ -30,6 +30,10 @@ using System.Collections;
 using UnityEditor;
 
 namespace  scenedump {
+	/**	This class parses the Scene's object hierarchy and generates an Xml Document to represent it. 
+	 *		Its purpose is to assist with documentation-generation, and NOT actual serialization and deserialization.
+	 *		While you're certainly free to extend it for that purpose, you're likely to be fighting an uphill (and largely pointless) battle.
+	 */
 	public class XmlSceneHierarchy {
 
 		// If you set the traceId to the instanceID of an object you want to trace, it'll be logged (with call stack) and annotated in the XML output (via comment) whenever it's found.
@@ -42,8 +46,8 @@ namespace  scenedump {
 
 		public XmlDocument document { get; private set; } = new XmlDocument();
 
-
-		private HashSet<String> unhandledTypes = new HashSet<String>() { "Enum", "Generic", "ObjectReference", "LayerMask" };
+		// don't log an error message if a SerializedProperty has one of these types and fails to match the observed Type.FullName.
+		private HashSet<String> ignoredTypeMismatches = new HashSet<String>() { "Enum", "Generic", "ObjectReference" };
 
 		public XmlSceneHierarchy(XmlSceneDumperOptions options, int version) {
 			this.opt = options;
@@ -78,7 +82,7 @@ namespace  scenedump {
 			}
 		}
 
-
+		/**	Recursively add a GameObject and its child Components & GameObjects */
 		public virtual void add(XmlElement e, GameObject gameObject) {
 			XmlElement ge = addElement(e, "GameObject");
 
@@ -115,7 +119,8 @@ namespace  scenedump {
 			}
 		}
 
-		public void add(XmlElement parent, Component component) {
+		/**	Recursively add a Component and its children */
+		private void add(XmlElement parent, Component component) {
 
 			if (component.GetInstanceID() == traceId) {
 				Debug.Log($"found traceId = {traceId.ToString("X8")}");
@@ -124,6 +129,7 @@ namespace  scenedump {
 				addComment(parent, "was traced");
 			}
 
+			// we give special treatment to Transform and RectTransform Components
 			if (component is RectTransform) {
 				addRectTransform(parent, component);
 				return;
@@ -168,7 +174,7 @@ namespace  scenedump {
 				addProperties(e, component);
 			}
 			else {
-				XmlElement componentsElement = addElement(e, "fields-properties");
+				XmlElement componentsElement = addElement(e, "properties");
 				addProperties(componentsElement, component);
 				if (componentsElement.IsEmpty && (opt.omitContainerFieldsProperties == OmitWhen.IF_EMPTY))
 					e.RemoveChild(componentsElement);
@@ -210,7 +216,7 @@ namespace  scenedump {
 
 
 
-		public void addTransform(XmlElement parent, Component transform) {
+		private void addTransform(XmlElement parent, Component transform) {
 
 			if (transform.GetInstanceID() == traceId) {
 				Debug.Log($"found traceId = {traceId.ToString("X8")}");
@@ -226,7 +232,7 @@ namespace  scenedump {
 			addVector3(e, transform, "localScale", "scale");
 		}
 
-		public void addRectTransform(XmlElement parent, Component transform) {
+		private void addRectTransform(XmlElement parent, Component transform) {
 			XmlElement e = addElement(parent, "RectTransform");
 			setAttribute(e, "id", transform.GetInstanceID(), 8);
 
@@ -240,13 +246,15 @@ namespace  scenedump {
 			
 		}
 
-// types that can be sensibly rendered as property values, child elements, or both
 
-		public void addVector2(XmlElement parent, Component component, string propertyName, string displayName) {
+
+		// types that can be sensibly rendered as property values, child elements, or both
+
+		private void addVector2(XmlElement parent, Component component, string propertyName, string displayName) {
 			addVector2(parent, component.GetType().GetProperty(propertyName).GetValue(component), displayName);
 		}
 
-		public void addVector2(XmlElement parent, object arg, string name) {
+		private void addVector2(XmlElement parent, object arg, string name) {
 			Vector2 value = (Vector2)arg;
 			
 
@@ -261,11 +269,11 @@ namespace  scenedump {
 			}
 		}
 
-		public void addVector3(XmlElement parent, Component component, string propertyName, string displayName) {
+		private void addVector3(XmlElement parent, Component component, string propertyName, string displayName) {
 			addVector3(parent, displayName, component.GetType().GetProperty(propertyName).GetValue(component));
 		}
 
-		public void addVector3(XmlElement parent, string name, object arg) {
+		private void addVector3(XmlElement parent, string name, object arg) {
 			Vector3 value = (Vector3)arg;
 			
 			if (opt.includeValueStringAsProperty)
@@ -280,7 +288,7 @@ namespace  scenedump {
 			}
 		}
 
-		public void addVector4(XmlElement parent, string name, object arg) {
+		private void addVector4(XmlElement parent, string name, object arg) {
 			Vector4 value = (Vector4)arg;
 			
 
@@ -297,7 +305,7 @@ namespace  scenedump {
 			}
 		}
 
-		public void addColor(XmlElement parent, System.Object arg, String name) {
+		private void addColor(XmlElement parent, System.Object arg, String name) {
 			Color value = (Color)arg;
 			
 
@@ -314,7 +322,7 @@ namespace  scenedump {
 			}
 		}
 
-		public void addBounds(XmlElement parent, String name, System.Object arg) {
+		private void addBounds(XmlElement parent, String name, System.Object arg) {
 			Bounds value = (Bounds)arg;
 			XmlElement e = addElement(parent, "Bounds");
 			
@@ -327,9 +335,9 @@ namespace  scenedump {
 		}
 
 
-// types whose values are likely to be too long or complex to concisely render as a 'value' property instead of as discrete child elements
+		// types whose values are likely to be too long or complex to concisely render as a 'value' property instead of as discrete child elements
 
-		public void addMatrix4x4(XmlElement parent, object o, String name) {
+		private void addMatrix4x4(XmlElement parent, object o, String name) {
 
 			UnityEngine.Matrix4x4 matrix = (UnityEngine.Matrix4x4)o;
 			
@@ -359,7 +367,8 @@ namespace  scenedump {
 			}
 		}
 
-		public void getAncestry(System.Type type, List<Type> ancestors, String stopAt) {
+		/**	determines the superclasses of a given class */
+		private void getAncestry(System.Type type, List<Type> ancestors, String stopAt) {
 			if (type == null)
 				return;
 
@@ -386,7 +395,7 @@ namespace  scenedump {
 			getAncestry(type.BaseType, ancestors, stopAt);
 		}
 
-		public void addComponentSuperclasses(XmlElement parent, Component component, String stopAt) {
+		private void addComponentSuperclasses(XmlElement parent, Component component, String stopAt) {
 			List<Type> ancestors = new List<Type>();
 			getAncestry(component.GetType().BaseType, ancestors, stopAt);
 
@@ -399,7 +408,7 @@ namespace  scenedump {
 			}
 		}
 
-		public void addInterfacesImplementedByComponent(XmlElement parent, Type type) {
+		private void addInterfacesImplementedByComponent(XmlElement parent, Type type) {
 			System.Type[] interfaces = type.GetInterfaces();
 			if (interfaces.Length == 0)
 				return;
@@ -414,23 +423,23 @@ namespace  scenedump {
 
 
 
-		public XmlElement addElement(XmlElement parent, String name, double value) {
+		private XmlElement addElement(XmlElement parent, String name, double value) {
 			return addElement(parent, name, value.ToString());
 		}
 
-		public XmlElement addElement(XmlElement parent, String name, float value) {
+		private XmlElement addElement(XmlElement parent, String name, float value) {
 			return addElement(parent, name, value.ToString());
 		}
 
-		public XmlElement addElement(XmlElement parent, String name, int value) {
+		private XmlElement addElement(XmlElement parent, String name, int value) {
 			return addElement(parent, name, value.ToString());
 		}
 
-		public XmlElement addElement(XmlElement parent, String name, int value, int hexDigits) {
+		private XmlElement addElement(XmlElement parent, String name, int value, int hexDigits) {
 			return addElement(parent, name, $"0x{value.ToString($"X{hexDigits}")}");
 		}
 
-		public XmlElement addElement(XmlElement parent, String name, uint value, int hexDigits) {
+		private XmlElement addElement(XmlElement parent, String name, uint value, int hexDigits) {
 			return addElement(parent, name, $"0x{value.ToString($"X{hexDigits}")}");
 		}
 
@@ -446,7 +455,7 @@ namespace  scenedump {
 			setAttribute(element, name, $"0x{value.ToString($"X{hexDigits}")}");
 		}
 
-		public XmlElement addElement(XmlElement parent, String name, bool value) {
+		private XmlElement addElement(XmlElement parent, String name, bool value) {
 			return addElement(parent, XmlConvert.EncodeName(name), value.ToString());
 		}
 
@@ -454,7 +463,7 @@ namespace  scenedump {
 			setAttribute(element, name, value.ToString());
 		}
 
-		public XmlElement addElement(XmlElement parent, String name, String value) {
+		private XmlElement addElement(XmlElement parent, String name, String value) {
 			XmlElement e = addElement(parent, name);
 			e.InnerText = value ?? "«null»";
 			if (e.InnerText.Equals("null"))
@@ -462,40 +471,39 @@ namespace  scenedump {
 			return e;
 		}
 
-		public XmlElement addElement(XmlElement parent, String name, System.Object value) {
+		private XmlElement addElement(XmlElement parent, String name, System.Object value) {
 			return addElement(parent, name, value?.ToString());
 		}
+
 		private void setAttribute(XmlElement parent, String name, String value) {
 			parent.SetAttribute(XmlConvert.EncodeName(name).Replace("_x0020_", "_"), value);
 		}
 
-		public XmlElement addElement(XmlElement parent, String name) {
+		private XmlElement addElement(XmlElement parent, String name) {
 			XmlElement e = createElement(name);
 			parent.AppendChild(e);
 			return e;
 		}
 
-		public XmlElement createElement(String name) {
+		private XmlElement createElement(String name) {
 			return document.CreateElement(opt.xmlPrefix, XmlConvert.EncodeName(name), opt.xmlNamespace);
 		}
 
-		public void setTagAttribute(XmlElement parent, String tag) {
+		private void setTagAttribute(XmlElement parent, String tag) {
 			if (opt.includeUntagged || (((tag?.Length ?? 0) > 0) && (!"Untagged".Equals(tag))))
 				parent.SetAttribute("tag", tag);
 		}
 
 
 
-		public XmlComment addComment(XmlElement parent, String text) {
+		private XmlComment addComment(XmlElement parent, String text) {
 			XmlComment e = document.CreateComment(text);
 			parent.AppendChild(e);
 			return e;
 		}
 
-		
-		public void addProperties(XmlElement parent, Component component) {
 
-#if UNITY_EDITOR
+		private void addProperties(XmlElement parent, Component component) {
 			SerializedObject serializedObject = new SerializedObject(component);
 			SerializedProperty property = serializedObject.GetIterator();
 			//Debug.Log($"properties for {component.name}");
@@ -515,10 +523,7 @@ namespace  scenedump {
 						//setAttribute(valueElement, "propertyPath", property.propertyPath);
 					}
 				} while (property.NextVisible(false));
-			}
-
-			#endif
-			
+			}			
 		}
 
 		private bool includeProperty(SerializedProperty property) {
@@ -542,7 +547,7 @@ namespace  scenedump {
 			if (normalizeType(property).Equals(value.GetType().FullName))
 				return true;
 
-			if (unhandledTypes.Contains(property.propertyType.ToString()))
+			if (ignoredTypeMismatches.Contains(property.propertyType.ToString()))
 				return false;
 
 			Debug.LogError($"types don't match -- {normalizeType(property)} != {value.GetType().FullName}");
@@ -570,6 +575,8 @@ namespace  scenedump {
 				return "UnityEngine.Rect";
 			if ("AnimationCurve".Equals(property.propertyType.ToString()))
 				return "UnityEngine.AnimationCurve";
+			if ("LayerMask".Equals(property.propertyType.ToString()))
+				return "System.UInt32";
 			return property.propertyType.ToString();
 		}
 
@@ -680,9 +687,6 @@ namespace  scenedump {
 					return e;
 				}
 
-				
-
-
 				if (arg.GetLength(0) == 1) {
 					XmlElement valueElement;
 					if (arg.GetValue(0).GetType().IsArray)
@@ -693,9 +697,6 @@ namespace  scenedump {
 					setAttribute(valueElement, "index", 0);
 					return e;
 				}
-
-
-				
 
 				int lastElementWithSameValue = arg.GetLength(0) - 1;
 				String lastElementValue = "";
@@ -718,8 +719,6 @@ namespace  scenedump {
 					}
 				}
 				
-				
-
 				if (lastElementWithSameValue > 0) {
 					for (int x = 0; x <= lastElementWithSameValue; x++) {
 						System.Object value = arg.GetValue(x);
@@ -740,9 +739,7 @@ namespace  scenedump {
 					setAttribute(element, "index-from", lastElementWithSameValue);
 					setAttribute(element, "index-to", arg.GetLength(0) - 1);
 					
-				}
-
-				
+				}			
 			}
 			else if (arg.Rank == 2) {
 				int rows = arg.GetLength(0);

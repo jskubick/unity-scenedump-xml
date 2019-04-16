@@ -43,6 +43,7 @@ namespace scenedump {
 			opt.superclassTagName = "extends";
 			opt.interfaceContainerTagName = null; // container tag omitted entirely if null.
 			opt.interfaceTagName = "implements";
+			opt.omitContainerFieldsProperties = OmitWhen.ALWAYS; // don't wrap Component and GameObject properties in a <properties> container.
 
 			// Whenever a Type name gets output, we rip through typeAbbreviations to do a search/replace on every pair (note: it's straight-up string, not regex)
 			opt.typeAbbreviations = new String[,] { {"UnityEngine.", "µ." }, { "System.", "§." } };
@@ -65,6 +66,7 @@ namespace scenedump {
 			opt.superclassTagName = "superclass";
 			opt.interfaceContainerTagName = "implements";
 			opt.interfaceTagName = "interface";
+			opt.omitContainerFieldsProperties = OmitWhen.NEVER; // wrap the properties for each Component and GameObject in a <properties> container.
 
 			dumpScene(opt, OUTPUT_FILE_VERBOSE);
 		}

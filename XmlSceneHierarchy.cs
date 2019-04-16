@@ -493,8 +493,10 @@ namespace  scenedump {
 							setAttribute(valueElement, "sp-type", opt.abbreviateType(property.propertyType.ToString()));
 						if (property.propertyType == SerializedPropertyType.Enum)
 							setAttribute(valueElement, "sp-enum-index", property.enumValueIndex);
-						//if (property.propertyType == SerializedPropertyType.ObjectReference)
-							//setAttribute(valueElement, "sp-target-id", property.objectReferenceValue.GetInstanceID(), 4);
+						if (property.propertyType == SerializedPropertyType.ObjectReference) { 
+								setAttribute(valueElement, "target-id", property.objectReferenceValue.GetInstanceID(), 4);
+						}
+							
 						//setAttribute(valueElement, "propertyPath", property.propertyPath);
 					}
 				} while (property.NextVisible(false));

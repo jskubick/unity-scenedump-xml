@@ -31,7 +31,10 @@ namespace  scenedump {
 		// when true, arrays where two or more of the final elements (or all of the elements) have the same value are collapsed into a single <same-value> tag
 		public bool compressArrays = true;
 
-		public String xmlPrefix { get; set; } = "unity";
+		/**	if non-null, specifies the prefix used for all XML tags */
+		public String xmlPrefix { get; set; } = null;
+
+	
 		public String xmlNamespace { get; set; } = "http://pantherkitty.software/xml/unity-scene/1.0";
 
 		public String[,] typeAbbreviations = null;

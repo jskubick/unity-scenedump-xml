@@ -4,6 +4,11 @@ Unity-Xml-Scenedump is a Unity editor extension that allows you to dump a scene'
 
 * A reference project ([unity-scenedump-xml-project](https://github.com/jskubick/unity-scenedump-xml-project) ), which is a complete ready-to-run Unity project with example scene that you can use to try out the extension before adding it to your own project.
 
+Here are some examples of the output it can produce (keep in mind that many aspects can be easily customized):
+* [Terse XML output](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-terse.xml) (nicer for human-reading)
+* [Verbose](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-verbose.xml) (probably easier to parse)
+
+
 Once you have it installed you can skip ahead:
 
 * ["How to Use"](#How-to-Use)
@@ -157,5 +162,8 @@ There's no real reason why I couldn't have done this for other classes as well. 
 
 * `interfaceContainerTagName` and `interfaceTagName` work the same way as their 'superclass' counterpards. 
 
-* `typeAbbreviations` and `valueAbbreviations` are 2-dimensional String[,] arrays defining name/value substitution pairs that get applied to... surprisingly... type names and values. If the array is null, no substitutions are made. Note that this is simple String.Replace(before,after), and does NOT involve regular expressions. Originally, it DID use regular expressions... then I realized I couldn't think of a single real use-case that actually needed them, and rewrote it to use String replace instead to make everyone's lives easier. 
+* `typeAbbreviations` and `valueAbbreviations` are 2-dimensional String[,] arrays defining name/value substitution pairs that get applied to... surprisingly... type names and values. 
+   * If the array is null, no substitutions are made. 
+   * Note that this is simple String.Replace(before,after), and does NOT involve regular expressions. 
+   * If  you *really* want regular expressions, look at XmlSceneDumperOptions.abbreviateType() and abbreviateValue().
 

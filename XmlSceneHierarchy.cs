@@ -52,10 +52,25 @@ namespace  scenedump {
 
 		/**	Creates XmlDocument from current scene */
 		public void parse() {
-
+					
 			XmlElement sceneElement = document.CreateElement(opt.xmlPrefix, "Scene", opt.xmlNamespace);
 			sceneElement.SetAttribute("version", $"{version}");
 			document.AppendChild(sceneElement);
+
+			if ((opt.valueAbbreviations != null) || (opt.typeAbbreviations != null)) {
+				XmlElement meta = addElement(sceneElement, "meta");
+				
+				for (int x = 0; x < opt.valueAbbreviations.GetLength(0); x++) {
+					XmlElement m = addElement(meta, "value-abbreviation");
+					setAttribute(m, "before", opt.valueAbbreviations[x, 0]);
+					setAttribute(m, "after", opt.valueAbbreviations[x, 1]);
+				}
+				for (int x = 0; x < opt.typeAbbreviations.GetLength(0); x++) {
+					XmlElement m = addElement(meta, "type-abbreviation");
+					setAttribute(m, "before", opt.typeAbbreviations[x, 0]);
+					setAttribute(m, "after", opt.typeAbbreviations[x, 1]);
+				}
+			}
 
 			GameObject[] gameObjects = SceneManager.GetActiveScene().GetRootGameObjects();
 			foreach (GameObject g in gameObjects) {

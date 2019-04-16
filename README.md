@@ -20,7 +20,7 @@ Choose the scenario that applies to you:
 
 * [My Unity project is never going to be in Git](#Project-wont-ever-be-in-Git)
 
-* [I installed the extension in my project without putting it in Git, and NOW want to put my own project in Git](#Retroactively adding project to Git)
+* [I installed the extension in my project without putting it in Git, and NOW want to put my own project in Git](#Retroactively-adding-project-to-Git)
 
 ### Project already in Git:
 

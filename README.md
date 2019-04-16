@@ -2,7 +2,7 @@ Unity-Xml-Scenedump is a Unity editor extension that allows you to dump a scene'
 
 * This one (**unity-scenedump-xml**), which contains the files you'll need to add to your Unity project to enable its use.
 
-* A reference project ([unity-scenedump-xml**-project**](https://github.com/jskubick/unity-scenedump-xml-project) ), which is a complete ready-to-run Unity project with example scene that you can use to try out the extension before adding it to your own project.
+* A reference project ([unity-scenedump-xml-project](https://github.com/jskubick/unity-scenedump-xml-project) ), which is a complete ready-to-run Unity project with example scene that you can use to try out the extension before adding it to your own project.
 
 Once you have it installed you can skip ahead:
 
@@ -18,9 +18,9 @@ Choose the scenario that applies to you:
 
 * [My Unity project isn't in Git *yet*](#Project-not-yet-in-Git)
 
-* My Unity project is never going to be in Git.
+* [My Unity project is never going to be in Git](#Project-wont-ever-be-in-Git)
 
-* I installed the extension in my project without putting it in Git, and NOW want to put my own project in Git.
+* [I installed the extension in my project without putting it in Git, and NOW want to put my own project in Git](#Retroactively adding project to Git)
 
 ### Project already in Git:
 

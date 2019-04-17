@@ -6,6 +6,9 @@ namespace  scenedump {
 	public enum OmitWhen { NEVER, IF_EMPTY, ALWAYS };
 	public class XmlSceneDumperOptions {
 
+		// if non-null, only SerializedProperty.propertyType.ToString() values found in the HashSet are included when rendering <property> values.
+		public HashSet<String> propertyTypesToInclude = null; 
+
 		// NEVER: every child of a <Component> (or <Behaviour, or MonoBehaviour, or ...) has a <properties> tag containing <property> tags for each property.
 		// IF_EMPTY: same, but components with NO properties have the empty <properties/> tag omitted
 		// ALWAYS: <property> and <array> children go directly under <Component> (or <Behaviour>, or ...) tag.

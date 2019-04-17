@@ -534,7 +534,10 @@ namespace  scenedump {
 			if ((property.propertyType == SerializedPropertyType.ObjectReference) && value.GetType().FullName.Equals("UnityEditor.MonoScript"))
 				return opt.includeSerializedPropertyTypeMonoScript;
 
-			return true;
+			if (opt.propertyTypesToInclude == null)
+				return true;
+
+			return opt.propertyTypesToInclude.Contains(property.propertyType.ToString());
 		}
 
 		private bool isSameType(SerializedProperty property, object value) {
@@ -626,7 +629,7 @@ namespace  scenedump {
 			else if (value is Component) {
 				e.SetAttribute("target-name", getComponentName(value));
 				e.SetAttribute("target-id", ($"0x{((Component)value).GetInstanceID().ToString("X8")}"));
-				e.InnerText = value?.ToString() ?? "«null»";
+				e.InnerText = opt.abbreviateValue(value?.ToString() ?? "«null»");
 			}
 
 			else if (value is UnityEngine.Bounds) {
@@ -640,7 +643,7 @@ namespace  scenedump {
 						mi.Invoke(value, new System.Object[] { e });
 					}
 					else {
-						e.InnerText = value?.ToString() ?? "«null»";
+						e.InnerText = opt.abbreviateValue(value?.ToString() ?? "«null»");
 						if (e.InnerText.Equals("null"))
 							e.InnerText = "«null»";
 					}

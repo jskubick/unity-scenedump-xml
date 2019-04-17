@@ -27,11 +27,38 @@ using System;
 namespace scenedump {
 	public static class XmlSceneDumper {
 
-		static String OUTPUT_FILE_VERBOSE = @"scene-verbose.xml";
-		static String OUTPUT_FILE_TERSE = @"scene-terse.xml";
+		static String OUTPUT_FILE_VERBOSE = "scene-verbose.xml";
+		static String OUTPUT_FILE_COMPACT = "scene-compact.xml";
+		static String OUTPUT_FILE_TERSE = "scene-terse.xml";
 
 		[MenuItem("Debug/Export Scene as Xml (terse)")]
 		public static void dumpSceneTerse() {
+			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
+
+			opt.propertyTypesToInclude = new HashSet<String>() { "ObjectReference" }; // when rendering SerializedProperties, include ONLY ObjectReference
+
+			opt.xmlPrefix = null; // don't prefix tags
+			opt.includeUntagged = false; // don't  include a "tag" attribute unless it actually has a meaningful value (eg, NOT null, blank, or "Untagged")
+			opt.includeValueStringAsProperty = true; // render values of things like vector3 as string values of attributes
+			opt.includeValueAsDiscreteElements = false; // don't verbosely render values of things like Vector3 as discrete child elements of container parent elements
+			opt.compressArrays = true; // if the last (or all) elements of an array have the same value, collapse them all into a single element
+
+			opt.superclassContainerTagName = null; // if null, the container tag is omitted entirely
+			opt.superclassTagName = "extends";
+			opt.interfaceContainerTagName = null; // container tag omitted entirely if null.
+			opt.interfaceTagName = "implements";
+			opt.omitContainerFieldsProperties = OmitWhen.ALWAYS; // don't wrap Component and GameObject properties in a <properties> container.
+
+			// Whenever a Type name gets output, we rip through typeAbbreviations to do a search/replace on every pair (note: it's straight-up string, not regex)
+			opt.typeAbbreviations = new String[,] { {"UnityEngine.", "µ." }, { "System.", "§." }};
+			// ditto, for values. This example strips out newlines and replaces them with an alternative.
+			opt.valueAbbreviations = new String[,] { { "\n", " •¬ " }, { "Instance", "¡" }, { "UnityEngine.", "µ." }, { "System.", "§." } };
+
+			dumpScene(opt, OUTPUT_FILE_TERSE);
+		}
+
+		[MenuItem("Debug/Export Scene as Xml (compact)")]
+		public static void dumpSceneCompact() {
 			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
 			opt.xmlPrefix = null; // don't prefix tags
 			opt.includeUntagged = false; // don't  include a "tag" attribute unless it actually has a meaningful value (eg, NOT null, blank, or "Untagged")
@@ -46,11 +73,11 @@ namespace scenedump {
 			opt.omitContainerFieldsProperties = OmitWhen.ALWAYS; // don't wrap Component and GameObject properties in a <properties> container.
 
 			// Whenever a Type name gets output, we rip through typeAbbreviations to do a search/replace on every pair (note: it's straight-up string, not regex)
-			opt.typeAbbreviations = new String[,] { {"UnityEngine.", "µ." }, { "System.", "§." } };
+			opt.typeAbbreviations = new String[,] { { "UnityEngine.", "µ." }, { "System.", "§." } };
 			// ditto, for values. This example strips out newlines and replaces them with an alternative.
-			opt.valueAbbreviations = new String[1, 2] { { "\n", " •¬ " } };
+			opt.valueAbbreviations = new String[,] { { "\n", " •¬ " }, { "Instance", "¡" }, { "UnityEngine.", "µ." }, { "System.", "§." } };
 
-			dumpScene(opt, OUTPUT_FILE_TERSE);
+			dumpScene(opt, OUTPUT_FILE_COMPACT);
 		}
 
 		[MenuItem("Debug/Export Scene as Xml (verbose)")]

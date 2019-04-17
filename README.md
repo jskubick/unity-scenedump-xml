@@ -5,7 +5,8 @@ Unity-Xml-Scenedump is a Unity editor extension that allows you to dump a scene'
 * A reference project ([unity-scenedump-xml-project](https://github.com/jskubick/unity-scenedump-xml-project) ), which is a complete ready-to-run Unity project with example scene that you can use to try out the extension before adding it to your own project.
 
 Here are some examples of the output it can produce (keep in mind that many aspects can be easily customized):
-* [Terse XML output](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-terse.xml) (nicer for human-reading)
+* [Terse XML output](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-terse.xml) (nicer for human-reading... when rendering properties, includes **only** ObjectReference values)
+* [Compact XML output](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-compact.xml) (like Terse, but also includes all parameters, not just ObjectReferences)
 * [Verbose](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-verbose.xml) (probably easier to parse)
 
 
@@ -112,14 +113,15 @@ The truth is, this project began as a quick & dirty hack to generate human-reada
 
 # How to Use:
 
-By default, the extension (via XmlSceneDumper.cs) adds a new menu to Unity ("Test") with two options:
+By default, the extension (via XmlSceneDumper.cs) adds a new menu to Unity ("Test") with three options:
 
 * Export Scene as Xml (terse)
+* Export Scene as Xml (compact)
 * Export Scene as Xml (verbose)
 
 You can easily modify the menu and customize the options by editing XmlSceneDumper.cs (don't worry, it's easy).
 
-The 'terse' and 'verbose' options represent two common use cases... 'terse' is nicer (IMHO) for humans to read,
+The 'terse', 'compact', and 'verbose' options represent three common use cases... 'terse' and 'compact' are nicer (IMHO) for humans to read,
 but likely to be a pain to parse. 'Verbose' is harder to read on a typical 16:9 monitor because it squanders your
 most precious resource (vertical screen space) and surrounds it with an ocean of whitespace... but also separates
 out *most* values so they're easy to extract without playing games with regular expressions.
@@ -166,4 +168,6 @@ There's no real reason why I couldn't have done this for other classes as well. 
    * If the array is null, no substitutions are made. 
    * Note that this is simple String.Replace(before,after), and does NOT involve regular expressions. 
    * If  you *really* want regular expressions, look at XmlSceneDumperOptions.abbreviateType() and abbreviateValue().
+
+* `propertyTypesToInclude` is what distinguishes 'terse' from 'compact'... 'terse' includes only SerializedProperty values that are of type ObjectReference. To include all types of SerializedProperty, leave this set to its default value: null.  
 

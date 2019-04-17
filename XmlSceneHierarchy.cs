@@ -577,6 +577,8 @@ namespace  scenedump {
 				return "UnityEngine.AnimationCurve";
 			if ("LayerMask".Equals(property.propertyType.ToString()))
 				return "System.UInt32";
+			if ("Bounds".Equals(property.propertyType.ToString()))
+				return "UnityEngine.Bounds";
 			return property.propertyType.ToString();
 		}
 

@@ -27,8 +27,8 @@ using System;
 namespace scenedump {
 	public static class XmlSceneDumper {
 
-		static String OUTPUT_FILE_VERBOSE = @"C:\src\MyGithubProjects\unity-scenedump-xml-project\samples\scene-verbose.xml";
-		static String OUTPUT_FILE_TERSE = @"C:\src\MyGithubProjects\unity-scenedump-xml-project\samples\scene-terse.xml";
+		static String OUTPUT_FILE_VERBOSE = @"scene-verbose.xml";
+		static String OUTPUT_FILE_TERSE = @"scene-terse.xml";
 
 		[MenuItem("Debug/Export Scene as Xml (terse)")]
 		public static void dumpSceneTerse() {

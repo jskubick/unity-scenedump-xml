@@ -23,6 +23,9 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
+using System.Linq;
+using System.Xml.Linq;
+using System.Xml;
 
 namespace scenedump {
 	public static class XmlSceneDumper {
@@ -30,6 +33,13 @@ namespace scenedump {
 		static String OUTPUT_FILE_VERBOSE = "scene-verbose.xml";
 		static String OUTPUT_FILE_COMPACT = "scene-compact.xml";
 		static String OUTPUT_FILE_TERSE = "scene-terse.xml";
+		/*
+		[MenuItem("Debug/experiment")]
+		public static void doExperiment() {
+			SceneParser parser = new SceneParser(new XmlSceneDumperOptions());
+			parser.parse();
+		}
+		*/
 
 		[MenuItem("Debug/Export Scene as Xml (terse)")]
 		public static void dumpSceneTerse() {
@@ -54,7 +64,42 @@ namespace scenedump {
 			// ditto, for values. This example strips out newlines and replaces them with an alternative.
 			opt.valueAbbreviations = new String[,] { { "\n", " •¬ " }, { "Instance", "¡" }, { "UnityEngine.", "µ." }, { "System.", "§." } };
 
-			dumpScene(opt, OUTPUT_FILE_TERSE);
+			XmlSceneHierarchy hierarchy = dumpScene(opt, OUTPUT_FILE_TERSE);
+
+			SceneParser parser = new SceneParser(new XmlSceneDumperOptions());
+			parser.parse();
+			
+			XmlNodeReader nodeReader = new XmlNodeReader(hierarchy.document);
+			nodeReader.MoveToContent();
+			
+
+
+			XDocument xDoc = XDocument.Parse(hierarchy.document.OuterXml);
+			XElement root = xDoc.Root;
+			XNamespace aw = "http://pantherkitty.software/xml/unity-scene/1.0";
+			IEnumerable<XElement> behaviour =
+					from el in root.Descendants( aw+ "property")
+					where (string)el.Attribute("target-id") == "0x00002A9E"
+					select el;
+			foreach (XElement el in behaviour)
+				Debug.Log(el);
+
+			/*
+			foreach(int i in parser.refs.objectReferences.Keys) {
+				Debug.Log($"Looking for 0x{i.ToString("X8")}");
+				IEnumerable<XElement> targetElement =
+					from el in root.Elements("Behaviour")
+					select el;
+				foreach (XElement el in targetElement)
+					Debug.Log(el);
+			}
+			*/
+			//XElement root = XElement.ReadFrom
+
+			pruneNonRefs(hierarchy.document);
+			using (StreamWriter writer = new StreamWriter("pruned.xml", false)) {
+				hierarchy.document.Save(writer);
+			}
 		}
 
 		[MenuItem("Debug/Export Scene as Xml (compact)")]
@@ -98,7 +143,7 @@ namespace scenedump {
 			dumpScene(opt, OUTPUT_FILE_VERBOSE);
 		}
 
-		private static void dumpScene(XmlSceneDumperOptions options, String outputFile) {
+		private static XmlSceneHierarchy dumpScene(XmlSceneDumperOptions options, String outputFile) {
 			XmlSceneHierarchy tree = new XmlSceneHierarchy(options, 1);
 
 			tree.parse();
@@ -108,6 +153,47 @@ namespace scenedump {
 				tree.document.Save(writer);
 			}
 			Debug.Log("Scene dumped to " + outputFile);
+
+			return tree;
+		}
+
+		private static void pruneNonRefs(XmlDocument doc) {
+			Debug.Log("pruning");
+			List<XmlNode> nodes = new List<XmlNode>();
+			foreach (XmlNode e in doc.DocumentElement.ChildNodes) {
+				if (pruneNonRefs(e))
+					nodes.Add(e);
+			}
+			foreach (XmlNode node in nodes)
+				doc.DocumentElement.RemoveChild(node);
+		}
+
+		private static bool pruneNonRefs(XmlNode n) {
+			bool isPrunable = true;
+			if (n.NodeType == XmlNodeType.Element) {
+				if (n.HasChildNodes) {
+
+					List<XmlNode> nodes = new List<XmlNode>();
+					foreach (XmlNode child in n.ChildNodes) {
+						if (pruneNonRefs(child))
+							nodes.Add(child);
+						else
+							isPrunable = false;
+					}
+					foreach (XmlNode child in nodes)
+						n.RemoveChild(child);
+				}
+
+				if (((XmlElement)n).HasAttribute("target-id")) {
+					Debug.Log($"keeping element:\n{n.OuterXml.ToString()}");
+					return false;
+				}
+			}
+			else {
+				return true;
+			}
+			Debug.Log(isPrunable ? $"discarding element:\n{n.OuterXml.ToString()}" : $"KeepingElement:\n{n.OuterXml.ToString()}");
+			return isPrunable;
 		}
 	}
 }

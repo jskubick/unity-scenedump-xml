@@ -509,15 +509,16 @@ namespace  scenedump {
 			//Debug.Log($"properties for {component.name}");
 			if (property.NextVisible(true)) {
 				do {
-					if (includeProperty(property)) {
+					if (opt.includeProperty(property)) {
 						object spValue = SerializedPropertyValue.parse(property);
-						XmlElement valueElement = add("property", parent, spValue?.GetType().FullName, spValue, property.displayName);
+						XmlElement valueElement = add("property", parent, spValue?.GetType().FullName, spValue, property.name);
+						setAttribute(valueElement, "sp-name", property.displayName);
 						if (isSameType(property, spValue) == false)
 							setAttribute(valueElement, "sp-type", opt.abbreviateType(property.propertyType.ToString()));
 						if (property.propertyType == SerializedPropertyType.Enum)
 							setAttribute(valueElement, "sp-enum-index", property.enumValueIndex);
 						if (property.propertyType == SerializedPropertyType.ObjectReference) { 
-								setAttribute(valueElement, "target-id", property.objectReferenceValue.GetInstanceID(), 4);
+								setAttribute(valueElement, "target-id", property.objectReferenceValue.GetInstanceID(), 8);
 						}
 							
 						//setAttribute(valueElement, "propertyPath", property.propertyPath);
@@ -526,19 +527,7 @@ namespace  scenedump {
 			}			
 		}
 
-		private bool includeProperty(SerializedProperty property) {
-			object value = SerializedPropertyValue.parse(property);
-			if (value == null)
-				return false;
-
-			if ((property.propertyType == SerializedPropertyType.ObjectReference) && value.GetType().FullName.Equals("UnityEditor.MonoScript"))
-				return opt.includeSerializedPropertyTypeMonoScript;
-
-			if (opt.propertyTypesToInclude == null)
-				return true;
-
-			return opt.propertyTypesToInclude.Contains(property.propertyType.ToString());
-		}
+		
 
 		private bool isSameType(SerializedProperty property, object value) {
 			if ((property == null) && (value == null))

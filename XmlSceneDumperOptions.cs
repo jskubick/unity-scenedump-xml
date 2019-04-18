@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System;
+using UnityEditor;
 
 namespace  scenedump {
 
@@ -66,6 +67,21 @@ namespace  scenedump {
 				return false;
 			return obviousSuperclasses.Contains(t.FullName);
 		}
+
+		public bool includeProperty(SerializedProperty property) {
+			object value = SerializedPropertyValue.parse(property);
+			if (value == null)
+				return false;
+
+			if ((property.propertyType == SerializedPropertyType.ObjectReference) && value.GetType().FullName.Equals("UnityEditor.MonoScript"))
+				return includeSerializedPropertyTypeMonoScript;
+
+			if (propertyTypesToInclude == null)
+				return true;
+
+			return propertyTypesToInclude.Contains(property.propertyType.ToString());
+		}
+
 
 		/**	Whenever a value gets rendered, it hooks through here, so this is where string substitutions are handled, and 
 		 *		where you'd want to handle regular expressions as well.

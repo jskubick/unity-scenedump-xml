@@ -49,6 +49,9 @@ namespace  scenedump {
 		// don't log an error message if a SerializedProperty has one of these types and fails to match the observed Type.FullName.
 		private HashSet<String> ignoredTypeMismatches = new HashSet<String>() { "Enum", "Generic", "ObjectReference" };
 
+		private Dictionary<int, List<XmlElement>> referenceIndex = new Dictionary<int, List<XmlElement>>();
+		private Dictionary<int, XmlElement> objectIndex = new Dictionary<int, XmlElement>();
+
 		public XmlSceneHierarchy(XmlSceneDumperOptions options, int version) {
 			this.opt = options;
 			this.version = version;
@@ -80,11 +83,57 @@ namespace  scenedump {
 			foreach (GameObject g in gameObjects) {
 				add(sceneElement, g);
 			}
+
+			XmlElement refElement = addElement(sceneElement, "references");
+			foreach(int key in referenceIndex.Keys) {
+				if (objectIndex.ContainsKey(key)) {
+
+					
+
+					
+					foreach (XmlElement child in referenceIndex[key]) {
+						XmlElement targetElement = objectIndex[key];
+						XmlElement referentElement = createElement("referenced-by");
+						XmlElement parent = child.ParentNode as XmlElement;
+						String match = (opt.xmlPrefix == null) ? "properties" : $"{opt.xmlPrefix}:properties";
+						if (parent.Name.Equals(match))
+							parent = parent.ParentNode as XmlElement;
+						else
+							Debug.Log(parent.Name);
+						setAttribute(referentElement, "component-id", parent.GetAttribute("id"));
+						setAttribute(referentElement, "property-name", child.GetAttribute("name"));
+						targetElement.InsertBefore(referentElement, targetElement.FirstChild);
+
+						StringBuilder path = new StringBuilder();
+						
+
+						path.Append(identifyParents(parent));
+						
+						path.Append($"{parent.Name}({parent.GetAttribute("type")})");
+						path.Append($" •-» {child.GetAttribute("name")}");
+						referentElement.InnerText = path.ToString();
+	
+					}
+				}
+			}
+
+		}
+
+		private String identifyParents(XmlElement e) {
+			if (e == null)
+				return "";
+
+			String match = (opt.xmlPrefix == null) ? "GameObject" : $"{opt.xmlPrefix}:GameObject";
+			if (e.Name.Equals(match))
+				return  identifyParents(e.ParentNode as XmlElement) + $"{e.GetAttribute("name")} -» ";
+			else
+				return identifyParents(e.ParentNode as XmlElement);
 		}
 
 		/**	Recursively add a GameObject and its child Components & GameObjects */
 		public virtual void add(XmlElement e, GameObject gameObject) {
 			XmlElement ge = addElement(e, "GameObject");
+			objectIndex.Add(gameObject.GetInstanceID(), ge);
 
 			if (gameObject.GetInstanceID() == traceId) {
 				Debug.Log($"found traceId = {traceId.ToString("X8")}");
@@ -97,7 +146,10 @@ namespace  scenedump {
 			setAttribute(ge, "layer", gameObject.layer);
 			setAttribute(ge, "activeInHierarchy", gameObject.activeInHierarchy);
 			setAttribute(ge, "isStatic", gameObject.isStatic);
-			//@ToDo: add scene
+
+			PrefabAssetType prefabType = PrefabUtility.GetPrefabAssetType(gameObject);
+			if (prefabType != PrefabAssetType.NotAPrefab)
+				setAttribute(ge, "prefab", prefabType.ToString());
 
 			if ((gameObject?.GetComponents<Component>()?.Length ?? 0) > 0) {
 				XmlElement componentsElement = createElement("components");
@@ -158,8 +210,12 @@ namespace  scenedump {
 			}
 
 			XmlElement e = addElement(parent, tagName);
+			objectIndex.Add(component.GetInstanceID(), e);
 			setAttribute(e, "type", opt.abbreviateType(component.GetType().FullName));
 			setAttribute(e, "id", component.GetInstanceID(), 8);
+			PrefabAssetType prefabType = PrefabUtility.GetPrefabAssetType(component);
+			if (prefabType != PrefabAssetType.NotAPrefab)
+				setAttribute(e, "prefab", prefabType.ToString());
 
 			if (component is Behaviour) {
 				setAttribute(e, "enabled", ((Behaviour)component).enabled);
@@ -185,6 +241,8 @@ namespace  scenedump {
 
 		public virtual void add(XmlElement parent, Transform child) {
 
+			throw new NotImplementedException("Uh oh, something actually called add(XmlElement, Transform), so it wasn't unused after all!");
+			/*
 			if (child.GetInstanceID() == traceId) {
 				Debug.Log($"found traceId = {traceId.ToString("X8")}");
 				addComment(parent, "executing add(XmlElement, Transform)");
@@ -201,6 +259,11 @@ namespace  scenedump {
 
 			e.SetAttribute("instance", $"0x{child.GetInstanceID().ToString("X8")}");
 
+			PrefabAssetType prefabType = PrefabUtility.GetPrefabAssetType(child);
+			if (prefabType != PrefabAssetType.NotAPrefab)
+				setAttribute(e, "prefab", prefabType.ToString());
+
+
 			if (child.gameObject.activeInHierarchy == false)
 				e.SetAttribute("active", "false");
 
@@ -212,6 +275,7 @@ namespace  scenedump {
 			foreach (Transform t in child) {
 				add(e, t);
 			}
+			*/
 		}
 
 
@@ -225,6 +289,7 @@ namespace  scenedump {
 
 
 			XmlElement e = addElement(parent, "Transform");
+			objectIndex.Add(transform.GetInstanceID(), e);
 			setAttribute(e, "id", transform.GetInstanceID(), 8);
 			
 			addVector3(e, transform, "position", "position");
@@ -234,6 +299,7 @@ namespace  scenedump {
 
 		private void addRectTransform(XmlElement parent, Component transform) {
 			XmlElement e = addElement(parent, "RectTransform");
+			objectIndex.Add(transform.GetInstanceID(), e);
 			setAttribute(e, "id", transform.GetInstanceID(), 8);
 
 			
@@ -519,6 +585,7 @@ namespace  scenedump {
 							setAttribute(valueElement, "sp-enum-index", property.enumValueIndex);
 						if (property.propertyType == SerializedPropertyType.ObjectReference) { 
 								setAttribute(valueElement, "target-id", property.objectReferenceValue.GetInstanceID(), 8);
+							addReference(property.objectReferenceValue.GetInstanceID(), valueElement);
 						}
 							
 						//setAttribute(valueElement, "propertyPath", property.propertyPath);
@@ -756,5 +823,12 @@ namespace  scenedump {
 		private void addTransformReference(XmlElement parent, String name, object o) {
 			addElement(parent, "ToDo", "addTransformReference");
 		}
+
+		private void addReference(int targetId, XmlElement referer) {
+			if (referenceIndex.ContainsKey(targetId) == false)
+				referenceIndex.Add(targetId, new List<XmlElement>());
+			referenceIndex[targetId].Add(referer);
+		}
+		
 	}
 }

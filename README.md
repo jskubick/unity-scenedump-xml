@@ -1,14 +1,8 @@
-Unity-Xml-Scenedump is a Unity editor extension that allows you to dump a scene's object hierarchy to XML. It consists of two related GitHub repositories:
+﻿Unity-Xml-Scenedump is a Unity editor extension that allows you to dump a scene's object hierarchy to XML. It consists of two related GitHub repositories:
 
 * This one (**unity-scenedump-xml**), which contains the files you'll need to add to your Unity project to enable its use.
 
 * A reference project ([unity-scenedump-xml-project](https://github.com/jskubick/unity-scenedump-xml-project) ), which is a complete ready-to-run Unity project with example scene that you can use to try out the extension before adding it to your own project.
-
-Here are some examples of the output it can produce (keep in mind that many aspects can be easily customized):
-* [Terse XML output](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-terse.xml) (nicer for human-reading... when rendering properties, includes **only** ObjectReference values)
-* [Compact XML output](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-compact.xml) (like Terse, but also includes all parameters, not just ObjectReferences)
-* [Verbose](http://github.com/jskubick/unity-scenedump-xml-project/blob/master/samples/scene-verbose.xml) (probably easier to parse)
-
 
 Once you have it installed you can skip ahead:
 
@@ -110,23 +104,33 @@ My apologies. I've used XML for years, but I don't have a lot of experience with
 
 The truth is, this project began as a quick & dirty hack to generate human-readable dumps (now known as 'terse') that hapened to be well-formed XML as a bonus. The stuff to generate more verbose XML came later. I know it has plenty of room for improvement.
 
+### The Debug menu isn't appearing!
+
+1. Double-click Assets/Editor/unity-scenedump-xml/XmlSceneDumper.cs to launch Visual Studio
+2. Build -> Build All
+3. Exit VS, Exit Unity, relaunch Unity.
+
 
 # How to Use:
 
-By default, the extension (via XmlSceneDumper.cs) adds a new menu to Unity ("Test") with three options:
+By default, the extension (via XmlSceneDumper.cs) adds a new menu to Unity ("Debug") with four options:
 
 * Export Scene as Xml (terse)
 * Export Scene as Xml (compact)
 * Export Scene as Xml (verbose)
+* Export Scene as Xml (ultra-terse)
 
 You can easily modify the menu and customize the options by editing XmlSceneDumper.cs (don't worry, it's easy).
 
-The 'terse', 'compact', and 'verbose' options represent three common use cases... 'terse' and 'compact' are nicer (IMHO) for humans to read,
-but likely to be a pain to parse. 'Verbose' is harder to read on a typical 16:9 monitor because it squanders your
-most precious resource (vertical screen space) and surrounds it with an ocean of whitespace... but also separates
-out *most* values so they're easy to extract without playing games with regular expressions.
+* terse renders it into a form that's technically valid XML... but is primarily designed for human-readability. It generally favors attributes over child elements, and tries to abbreviate class names where it can.
 
-## Known Issues
+* ultra-terse is like terse, but strips out repeating properties that aren't referenced by something else. Most of the time, this is good enough. If you're planning to print something out for reference, this is probably the option you'll want to use.
+
+* compact strikes a balance between rendering things as attributes vs child elements.
+
+* verbose generally renders everything as child elements with body text. If  you're planning to take this plugin's generated XML and use XSLT to transform it into another form, this is probably the option you'll want to use.
+
+# Known Issues
 
 * If you render values as named properties,  and the name is invalid for an XML attribute...
    * the invalid characters will be rendered as hex values in the form \_x####_, where "####" is a 4-digit hex value.
@@ -164,10 +168,4 @@ There's no real reason why I couldn't have done this for other classes as well. 
 
 * `interfaceContainerTagName` and `interfaceTagName` work the same way as their 'superclass' counterpards. 
 
-* `typeAbbreviations` and `valueAbbreviations` are 2-dimensional String[,] arrays defining name/value substitution pairs that get applied to... surprisingly... type names and values. 
-   * If the array is null, no substitutions are made. 
-   * Note that this is simple String.Replace(before,after), and does NOT involve regular expressions. 
-   * If  you *really* want regular expressions, look at XmlSceneDumperOptions.abbreviateType() and abbreviateValue().
-
-* `propertyTypesToInclude` is what distinguishes 'terse' from 'compact'... 'terse' includes only SerializedProperty values that are of type ObjectReference. To include all types of SerializedProperty, leave this set to its default value: null.  
-
+* `typeAbbreviations` and `valueAbbreviations` are 2-dimensional String[,] arrays defining name/value substitution pairs that get applied to... surprisingly... type names and values. If the array is null, no substitutions are made. Note that this is simple String.Replace(), and does NOT involve regular expressions (the original version did, but I decided to simplify it).

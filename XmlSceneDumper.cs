@@ -23,15 +23,48 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
+using System.Linq;
+using System.Xml.Linq;
+using System.Xml;
 
 namespace scenedump {
 	public static class XmlSceneDumper {
 
-		static String OUTPUT_FILE_VERBOSE = @"C:\src\MyGithubProjects\unity-scenedump-xml-project\samples\scene-verbose.xml";
-		static String OUTPUT_FILE_TERSE = @"C:\src\MyGithubProjects\unity-scenedump-xml-project\samples\scene-terse.xml";
+		static String OUTPUT_FILE_VERBOSE = "scene-verbose.xml";
+		static String OUTPUT_FILE_COMPACT = "scene-compact.xml";
+		static String OUTPUT_FILE_TERSE = "scene-terse.xml";
 
 		[MenuItem("Debug/Export Scene as Xml (terse)")]
 		public static void dumpSceneTerse() {
+			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
+
+			opt.propertyTypesToInclude = new HashSet<String>() { "ObjectReference" }; // when rendering SerializedProperties, include ONLY ObjectReference
+
+			opt.xmlPrefix = null; // don't prefix tags
+			opt.includeUntagged = false; // don't  include a "tag" attribute unless it actually has a meaningful value (eg, NOT null, blank, or "Untagged")
+			opt.includeValueStringAsProperty = true; // render values of things like vector3 as string values of attributes
+			opt.includeValueAsDiscreteElements = false; // don't verbosely render values of things like Vector3 as discrete child elements of container parent elements
+			opt.compressArrays = true; // if the last (or all) elements of an array have the same value, collapse them all into a single element
+
+			opt.superclassContainerTagName = null; // if null, the container tag is omitted entirely
+			opt.superclassTagName = "extends";
+			opt.interfaceContainerTagName = null; // container tag omitted entirely if null.
+			opt.interfaceTagName = "implements";
+			opt.omitContainerFieldsProperties = OmitWhen.ALWAYS; // don't wrap Component and GameObject properties in a <properties> container.
+
+			// Whenever a Type name gets output, we rip through typeAbbreviations to do a search/replace on every pair (note: it's straight-up string, not regex)
+			opt.typeAbbreviations = new String[,] { {"UnityEngine.", "µ." }, { "System.", "§." }};
+			// ditto, for values. This example strips out newlines and replaces them with an alternative.
+			opt.valueAbbreviations = new String[,] { { "\n", " •¬ " }, { "Instance", "¡" }, { "UnityEngine.", "µ." }, { "System.", "§." } };
+
+			XmlSceneHierarchy hierarchy = dumpScene(opt, OUTPUT_FILE_TERSE);
+
+
+			
+		}
+
+		[MenuItem("Debug/Export Scene as Xml (compact)")]
+		public static void dumpSceneCompact() {
 			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
 			opt.xmlPrefix = null; // don't prefix tags
 			opt.includeUntagged = false; // don't  include a "tag" attribute unless it actually has a meaningful value (eg, NOT null, blank, or "Untagged")
@@ -43,13 +76,14 @@ namespace scenedump {
 			opt.superclassTagName = "extends";
 			opt.interfaceContainerTagName = null; // container tag omitted entirely if null.
 			opt.interfaceTagName = "implements";
+			opt.omitContainerFieldsProperties = OmitWhen.ALWAYS; // don't wrap Component and GameObject properties in a <properties> container.
 
 			// Whenever a Type name gets output, we rip through typeAbbreviations to do a search/replace on every pair (note: it's straight-up string, not regex)
-			opt.typeAbbreviations = new String[,] { {"UnityEngine.", "µ." }, { "System.", "§." } };
+			opt.typeAbbreviations = new String[,] { { "UnityEngine.", "µ." }, { "System.", "§." } };
 			// ditto, for values. This example strips out newlines and replaces them with an alternative.
-			opt.valueAbbreviations = new String[1, 2] { { "\n", " •¬ " } };
+			opt.valueAbbreviations = new String[,] { { "\n", " •¬ " }, { "Instance", "¡" }, { "UnityEngine.", "µ." }, { "System.", "§." } };
 
-			dumpScene(opt, OUTPUT_FILE_TERSE);
+			dumpScene(opt, OUTPUT_FILE_COMPACT);
 		}
 
 		[MenuItem("Debug/Export Scene as Xml (verbose)")]
@@ -65,11 +99,58 @@ namespace scenedump {
 			opt.superclassTagName = "superclass";
 			opt.interfaceContainerTagName = "implements";
 			opt.interfaceTagName = "interface";
+			opt.omitContainerFieldsProperties = OmitWhen.NEVER; // wrap the properties for each Component and GameObject in a <properties> container.
 
 			dumpScene(opt, OUTPUT_FILE_VERBOSE);
 		}
 
-		private static void dumpScene(XmlSceneDumperOptions options, String outputFile) {
+		/**	Ultra-terse is like terse, but prunes away all child properties that aren't reference objects */
+		[MenuItem("Debug/Export Scene as Xml (ultra-terse)")]
+		public static void dumpSceneUltraTerse() {
+			XmlSceneDumperOptions opt = new XmlSceneDumperOptions();
+
+			opt.propertyTypesToInclude = new HashSet<String>() { "ObjectReference" }; // when rendering SerializedProperties, include ONLY ObjectReference
+
+			opt.xmlPrefix = null; // don't prefix tags
+			opt.includeUntagged = false; // don't  include a "tag" attribute unless it actually has a meaningful value (eg, NOT null, blank, or "Untagged")
+			opt.includeValueStringAsProperty = true; // render values of things like vector3 as string values of attributes
+			opt.includeValueAsDiscreteElements = false; // don't verbosely render values of things like Vector3 as discrete child elements of container parent elements
+			opt.compressArrays = true; // if the last (or all) elements of an array have the same value, collapse them all into a single element
+
+			opt.superclassContainerTagName = null; // if null, the container tag is omitted entirely
+			opt.superclassTagName = "extends";
+			opt.interfaceContainerTagName = null; // container tag omitted entirely if null.
+			opt.interfaceTagName = "implements";
+			opt.omitContainerFieldsProperties = OmitWhen.ALWAYS; // don't wrap Component and GameObject properties in a <properties> container.
+
+			// Whenever a Type name gets output, we rip through typeAbbreviations to do a search/replace on every pair (note: it's straight-up string, not regex)
+			opt.typeAbbreviations = new String[,] { { "UnityEngine.", "µ." }, { "System.", "§." } };
+			// ditto, for values. This example strips out newlines and replaces them with an alternative.
+			opt.valueAbbreviations = new String[,] { { "\n", " •¬ " }, { "Instance", "¡" }, { "UnityEngine.", "µ." }, { "System.", "§." } };
+
+			XmlSceneHierarchy hierarchy = dumpScene(opt, OUTPUT_FILE_TERSE);
+
+			XmlNodeReader nodeReader = new XmlNodeReader(hierarchy.document);
+			nodeReader.MoveToContent();
+
+			XDocument xDoc = XDocument.Parse(hierarchy.document.OuterXml);
+			XElement root = xDoc.Root;
+			XNamespace aw = "http://pantherkitty.software/xml/unity-scene/1.0";
+			IEnumerable<XElement> behaviour =
+					from el in root.Descendants(aw + "property")
+					where (string)el.Attribute("target-id") == "0x00002A9E"
+					select el;
+			foreach (XElement el in behaviour)
+				Debug.Log(el);
+
+			pruneNonRefs(hierarchy.document);
+			using (StreamWriter writer = new StreamWriter("pruned.xml", false)) {
+				hierarchy.document.Save(writer);
+			}
+
+		}
+
+		private static XmlSceneHierarchy dumpScene(XmlSceneDumperOptions options, String outputFile) {
 			XmlSceneHierarchy tree = new XmlSceneHierarchy(options, 1);
 
 			tree.parse();
@@ -79,6 +160,48 @@ namespace scenedump {
 				tree.document.Save(writer);
 			}
 			Debug.Log("Scene dumped to " + outputFile);
+
+			return tree;
+		}
+
+		private static void pruneNonRefs(XmlDocument doc) {
+			Debug.Log("pruning");
+			List<XmlNode> nodes = new List<XmlNode>();
+			foreach (XmlNode e in doc.DocumentElement.ChildNodes) {
+				if (pruneNonRefs(e))
+					nodes.Add(e);
+			}
+			foreach (XmlNode node in nodes)
+				doc.DocumentElement.RemoveChild(node);
+		}
+
+		private static bool pruneNonRefs(XmlNode n) {
+			bool isPrunable = true;
+			if (n.NodeType == XmlNodeType.Element) {
+				if (n.HasChildNodes) {
+
+					List<XmlNode> nodes = new List<XmlNode>();
+					foreach (XmlNode child in n.ChildNodes) {
+						if (pruneNonRefs(child))
+							nodes.Add(child);
+						else
+							isPrunable = false;
+					}
+					foreach (XmlNode child in nodes)
+						n.RemoveChild(child);
+				}
+
+				if (((XmlElement)n).HasAttribute("target-id")) {
+					Debug.Log($"keeping element:\n{n.OuterXml.ToString()}");
+					return false;
+				}
+				
+			}
+			else {
+				return true;
+			}
+			Debug.Log(isPrunable ? $"discarding element:\n{n.OuterXml.ToString()}" : $"KeepingElement:\n{n.OuterXml.ToString()}");
+			return isPrunable;
 		}
 	}
 }
